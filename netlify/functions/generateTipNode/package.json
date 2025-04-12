@@ -1,0 +1,12 @@
+{
+  "name": "generate-tip-node-function",
+  "version": "1.0.0",
+  "description": "Netlify function to generate math tips using Hugging Face API with Node.js",
+  "main": "generateTipNode.js",
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 

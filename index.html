@@ -178,6 +178,7 @@
             background-color: #27ae60; /* Green */
             border-color: #2ecc71;
             color: white;
+            font-size: 1.2rem; /* Slightly smaller */
         }
          #keyboard button.submit:hover:not(:disabled) {
             background-color: #2ecc71;
@@ -342,6 +343,46 @@
               box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
          }
 
+        #problem-analytics {
+            margin-top: 1.5rem;
+            padding: 1.2rem;
+            background-color: #333;
+            border-radius: 5px;
+            border-left: 5px solid #e74c3c; /* Red accent for analytics */
+        }
+
+        #problem-analytics h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+
+        #problem-analytics p {
+            margin-bottom: 0.5rem;
+            color: #b0b0b0;
+        }
+
+        #difficult-problem {
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        #difficult-time, #struggle-score {
+            font-weight: bold;
+            color: #e74c3c; /* Red to highlight difficulty */
+        }
+
+        #mental-tip {
+            margin-top: 1.5rem;
+            padding: 1.2rem;
+            background-color: #3a3a3a; /* Darker tip box */
+            border-left: 5px solid #3498db; /* Blue accent border */
+            border-radius: 4px;
+            text-align: left;
+            color: #e0e0e0; /* Light text */
+            font-style: italic;
+            line-height: 1.6;
+        }
 
     </style>
 </head>
@@ -358,11 +399,11 @@
         <!-- Quiz Screen -->
         <div id="quiz-screen" class="hidden">
             <div id="quiz-stats">
-                <span id="problem-counter">Problem: 1 / 10</span>
+                <span id="problem-counter">Problem: 0 / 10</span>
                 <span id="score-counter">Score: 0</span>
                 <span id="timer">Time: 0s</span>
             </div>
-            <div id="problem">1 + 1</div>
+            <div id="problem"></div>
             <input type="text" id="answer-input" pattern="[0-9-]*" inputmode="numeric" autocomplete="off" autofocus>
 
             <!-- On-Screen Keyboard -->
@@ -399,6 +440,13 @@
                 <div id="progress-bar-container">
                     <div id="progress-bar"></div>
                 </div>
+            </div>
+            <!-- New section for problem analytics -->
+            <div id="problem-analytics">
+                <h3>Problem Analytics</h3>
+                <p>Most Challenging Problem: <span id="difficult-problem">None identified</span></p>
+                <p>Time Spent: <span id="difficult-time">0s</span></p>
+                <p>Struggle Score: <span id="struggle-score">0</span></p>
             </div>
             <p id="mental-tip">Keep practicing to improve!</p>
             <button id="start-next-session-btn">Start Next Session</button>
@@ -460,7 +508,12 @@
             timerInterval: null,
             elapsedSeconds: 0,
             currentProblem: null,
-            problemStartTime: null
+            problemStartTime: null,
+            // Session analysis
+            keystrokes: [], // Array to track keystroke timestamps
+            lastKeystrokeTime: null, // Last keystroke time for interval calculation
+            struggleScores: [], // Array to track struggle scores for each problem
+            mostDifficultProblem: null // Problem with highest struggle score
         };
 
         let isMobile = false;
@@ -533,6 +586,17 @@
             startQuizBtn.addEventListener('click', startQuiz);
             startNextSessionBtn.addEventListener('click', startQuiz);
             answerInput.addEventListener('keypress', handleAnswerInputKeypress);
+            answerInput.addEventListener('input', function(e) {
+                // Only check on input events that aren't from keyboard keypresses (handled separately)
+                // This helps with paste events or other input methods
+                const value = e.target.value.trim();
+                if (value !== '' && !isNaN(parseInt(value))) {
+                    const userAnswer = parseInt(value);
+                    if (currentSession.currentProblem && userAnswer === currentSession.currentProblem.answer) {
+                        checkAnswer();
+                    }
+                }
+            });
             keyboard.addEventListener('click', handleKeyboardClick);
         }
 
@@ -548,6 +612,7 @@
                 quizScreen.classList.remove('hidden');
                 detectDevice(); // Re-check device type
                 toggleKeyboardVisibility();
+                answerInput.value = ''; // Ensure input is empty
                 answerInput.focus();
                 // Clear any lingering feedback styles
                 answerInput.classList.remove('correct-answer', 'incorrect-answer');
@@ -582,7 +647,12 @@
                 timerInterval: null,
                 elapsedSeconds: 0,
                 currentProblem: null,
-                problemStartTime: null
+                problemStartTime: null,
+                // Session analysis
+                keystrokes: [], // Array to track keystroke timestamps
+                lastKeystrokeTime: null, // Last keystroke time for interval calculation
+                struggleScores: [], // Array to track struggle scores for each problem
+                mostDifficultProblem: null // Problem with highest struggle score
             };
             timerEl.textContent = "Time: 0s"; // Reset timer display
              scoreCounterEl.textContent = "Score: 0"; // Reset score display
@@ -688,13 +758,30 @@
 
         function handleAnswerInputKeypress(event) {
             const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', 'Enter', 'Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End'];
+            
+            // Track keystroke timestamps for session analysis (for valid input keys)
+            if (allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                trackKeystroke(event.key);
+            }
+            
             if (event.key === 'Enter') {
                  event.preventDefault();
                  checkAnswer();
+             } else if (allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                 // For number keys, check if adding this digit would make a correct answer
+                 setTimeout(() => {
+                     const currentValue = answerInput.value.trim();
+                     if (currentValue !== '' && !isNaN(parseInt(currentValue))) {
+                         const userAnswer = parseInt(currentValue);
+                         // If the answer is correct, automatically process it
+                         if (currentSession.currentProblem && userAnswer === currentSession.currentProblem.answer) {
+                             checkAnswer();
+                         }
+                     }
+                 }, 10); // Small timeout to ensure value is updated
              } else if (!allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
                  // Prevent most non-numeric/control keys on physical keyboard
-                 // Allows navigation/deletion keys
-                // event.preventDefault(); // Can be too strict, rely on validation
+                 // event.preventDefault(); // Can be too strict, rely on validation
             }
         }
 
@@ -704,10 +791,12 @@
             const key = event.target.dataset.key;
             const currentValue = answerInput.value;
 
+            // Track on-screen keyboard input for session analysis
+            trackKeystroke(key);
+
             // Clear feedback styling on new input
              answerInput.classList.remove('correct-answer', 'incorrect-answer');
              if(feedbackTimeout) clearTimeout(feedbackTimeout);
-
 
             if (key === 'Enter') {
                 checkAnswer();
@@ -717,10 +806,80 @@
                 answerInput.value += key;
             } else if (!isNaN(parseInt(key))) {
                 answerInput.value += key;
+                
+                // Check if the current input is correct after adding a digit
+                const newValue = answerInput.value.trim();
+                if (newValue !== '' && !isNaN(parseInt(newValue))) {
+                    const userAnswer = parseInt(newValue);
+                    // If the answer is correct, automatically process it
+                    if (currentSession.currentProblem && userAnswer === currentSession.currentProblem.answer) {
+                        checkAnswer();
+                    }
+                }
             }
             answerInput.focus();
         }
 
+        /**
+         * Tracks keystroke timing and intervals for analyzing user input patterns
+         * @param {string} key - The key that was pressed
+         */
+        function trackKeystroke(key) {
+            const now = Date.now();
+            
+            // Calculate interval since last keystroke (if any)
+            let interval = 0;
+            if (currentSession.lastKeystrokeTime !== null) {
+                interval = now - currentSession.lastKeystrokeTime;
+            }
+            
+            // Store keystroke data
+            currentSession.keystrokes.push({
+                key: key,
+                timestamp: now,
+                interval: interval,
+                problemIndex: currentSession.currentProblemIndex
+            });
+            
+            // Update last keystroke time
+            currentSession.lastKeystrokeTime = now;
+        }
+
+        /**
+         * Calculates struggle score for the current problem based on time taken and keystroke patterns
+         * Higher score = more difficulty with the problem
+         */
+        function calculateStruggleScore() {
+            // Get keystrokes for current problem
+            const problemKeystrokes = currentSession.keystrokes.filter(
+                k => k.problemIndex === currentSession.currentProblemIndex
+            );
+            
+            // Calculate total time taken (from problem start to now)
+            const timeTaken = (Date.now() - currentSession.problemStartTime) / 1000;
+            
+            // Calculate hesitation penalty based on keystroke intervals
+            // We define a "hesitation" as a pause longer than 1.5 seconds between keystrokes
+            const HESITATION_THRESHOLD = 1500; // milliseconds
+            const HESITATION_WEIGHT = 1.5; // Weight multiplier for hesitations
+            
+            let hesitationPenalty = 0;
+            for (const keystroke of problemKeystrokes) {
+                if (keystroke.interval > HESITATION_THRESHOLD) {
+                    // Add weighted penalty for long pauses (hesitations)
+                    hesitationPenalty += (keystroke.interval / 1000) * HESITATION_WEIGHT;
+                }
+            }
+            
+            // Final struggle score combines time and hesitation penalties
+            const struggleScore = timeTaken + hesitationPenalty;
+            
+            return {
+                timeTaken: timeTaken,
+                hesitationPenalty: hesitationPenalty,
+                totalScore: struggleScore
+            };
+        }
 
         function checkAnswer() {
             // Prevent checking if already processing feedback
@@ -746,7 +905,19 @@
 
             const isCorrect = userAnswer === correctAnswer;
 
-            console.log(`Problem: ${currentSession.currentProblem.question}, User: ${userAnswer}, Correct: ${correctAnswer}, Correct: ${isCorrect}, Time: ${timeTaken.toFixed(2)}s`);
+            // Calculate struggle score for this problem
+            const struggleData = calculateStruggleScore();
+            
+            // Store struggle score for this problem
+            currentSession.struggleScores.push({
+                problemIndex: currentSession.currentProblemIndex,
+                question: currentSession.currentProblem.question,
+                struggleScore: struggleData.totalScore,
+                timeTaken: struggleData.timeTaken,
+                hesitationPenalty: struggleData.hesitationPenalty
+            });
+            
+            console.log(`Problem: ${currentSession.currentProblem.question}, User: ${userAnswer}, Correct: ${correctAnswer}, Correct: ${isCorrect}, Time: ${timeTaken.toFixed(2)}s, Struggle Score: ${struggleData.totalScore.toFixed(2)}`);
 
             // Visual Feedback using CSS classes
             answerInput.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
@@ -765,16 +936,22 @@
                 correctAnswer: correctAnswer,
                 userAnswer: userAnswer,
                 timeTaken: timeTaken,
-                isCorrect: isCorrect
+                isCorrect: isCorrect,
+                struggleScore: struggleData.totalScore
             });
 
+            // Reset keystroke tracking for next problem
+            currentSession.lastKeystrokeTime = null;
+
             // Move to the next problem after a delay
+            // Use shorter delay for correct answers to be responsive
+            const feedbackDelay = isCorrect ? 350 : 600;
             // Clear the feedback styling before moving on
             feedbackTimeout = setTimeout(() => {
                  answerInput.classList.remove('correct-answer', 'incorrect-answer');
                  answerInput.disabled = false; // Re-enable input
                  nextProblem();
-             }, 600); // Delay allows user to see feedback (e.g., 600ms)
+             }, feedbackDelay);
         }
 
         function endQuiz() {
@@ -784,10 +961,104 @@
             currentSession.endTime = Date.now();
             const totalTime = (currentSession.endTime - currentSession.startTime) / 1000;
 
+            // Identify the most difficult problem (highest struggle score)
+            identifyMostDifficultProblem();
+            
+            // Generate personalized tip based on the most difficult problem
+            if (currentSession.mostDifficultProblem) {
+                generatePersonalizedTip(currentSession.mostDifficultProblem);
+            }
+
             updateUserDataAfterSession(); // Update level/XP based on session score
             saveUserData();
             displaySummary(totalTime);
             showScreen('summary');
+        }
+
+        /**
+         * Identifies the problem with the highest struggle score in the session
+         */
+        function identifyMostDifficultProblem() {
+            if (currentSession.struggleScores.length === 0) return;
+            
+            // Find the problem with the highest struggle score
+            let maxScore = -1;
+            let maxScoreProblem = null;
+            
+            for (const problem of currentSession.struggleScores) {
+                if (problem.struggleScore > maxScore) {
+                    maxScore = problem.struggleScore;
+                    maxScoreProblem = problem;
+                }
+            }
+            
+            currentSession.mostDifficultProblem = maxScoreProblem;
+            console.log("Most difficult problem identified:", currentSession.mostDifficultProblem);
+        }
+
+        /**
+         * Makes an API call to our Netlify Function which securely communicates with Hugging Face
+         * to generate a personalized tip based on the most difficult problem from the session
+         * @param {Object} problem - The problem object with the highest struggle score
+         */
+        function generatePersonalizedTip(problem) {
+            console.log("Generating personalized tip for problem:", problem.question);
+            
+            // Update the mental tip with a loading message
+            mentalTipEl.textContent = "Generating personalized tip...";
+            
+            // Function to call Netlify function with different paths
+            const callNetlifyFunction = async (functionPath) => {
+                try {
+                    const response = await fetch(functionPath, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            problem: problem.question
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Request failed with status ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error(`Error calling ${functionPath}:`, error);
+                    throw error;
+                }
+            };
+            
+            // Try the main function first, then fall back to alternatives
+            callNetlifyFunction('/.netlify/functions/generateTip')
+                .catch(() => callNetlifyFunction('/.netlify/functions/generateTip-js/generateTip'))
+                .catch(() => callNetlifyFunction('/.netlify/functions/generateTipNode/generateTipNode'))
+                .then(data => {
+                    // Extract the generated tip from the response
+                    let tip = "Tip: ";
+                    
+                    if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+                        tip += data[0].generated_text;
+                    } else if (typeof data === 'object' && data.generated_text) {
+                        tip += data.generated_text;
+                    } else {
+                        // Fallback tip if the response format is unexpected
+                        tip += `For problems like ${problem.question}, break down the calculation into smaller steps.`;
+                    }
+                    
+                    // Update the displayed tip
+                    mentalTipEl.textContent = tip;
+                    console.log("Generated tip:", tip);
+                })
+                .catch(error => {
+                    console.error("All attempts to generate tip failed:", error);
+                    
+                    // Fallback tip if all API calls fail
+                    const fallbackTip = `Tip: For problems like ${problem.question}, try breaking the calculation into smaller steps and practice mental shortcuts.`;
+                    mentalTipEl.textContent = fallbackTip;
+                });
         }
 
         // --- User Data & Leveling ---
@@ -850,8 +1121,27 @@
             summaryTimeEl.textContent = `${totalTime.toFixed(1)}s`;
 
             updateLevelDisplay(); // Update level and XP progress bar based on latest userData
+            
+            // Display information about the most difficult problem
+            const difficultProblemEl = document.getElementById('difficult-problem');
+            const difficultTimeEl = document.getElementById('difficult-time');
+            const struggleScoreEl = document.getElementById('struggle-score');
+            
+            if (currentSession.mostDifficultProblem) {
+                difficultProblemEl.textContent = currentSession.mostDifficultProblem.question;
+                difficultTimeEl.textContent = `${currentSession.mostDifficultProblem.timeTaken.toFixed(1)}s`;
+                struggleScoreEl.textContent = currentSession.mostDifficultProblem.struggleScore.toFixed(1);
+            } else {
+                difficultProblemEl.textContent = "None identified";
+                difficultTimeEl.textContent = "0s";
+                struggleScoreEl.textContent = "0";
+            }
 
-            mentalTipEl.textContent = selectMentalMathTip(accuracy, userData.level);
+            // Note: The mental tip is now updated in the generatePersonalizedTip function
+            // If no difficult problem was identified or API call failed, use a generic tip
+            if (!currentSession.mostDifficultProblem) {
+                mentalTipEl.textContent = selectMentalMathTip(accuracy, userData.level);
+            }
         }
 
         function selectMentalMathTip(accuracy, level) {

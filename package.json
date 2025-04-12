@@ -1,0 +1,19 @@
+{
+  "name": "mental-math-trainer",
+  "version": "1.0.0",
+  "description": "Mental math trainer with Netlify Functions integration",
+  "main": "index.html",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "keywords": [
+    "mental-math",
+    "educational",
+    "netlify-functions"
+  ],
+  "author": "",
+  "license": "MIT"
+} 

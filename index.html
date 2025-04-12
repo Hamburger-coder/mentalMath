@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Math Trainer - Dark Mode</title>
+    <style>
+        /* --- Dark Theme & Base Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                         Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #1a1a1a; /* Dark background */
+            color: #e0e0e0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        #app {
+            background-color: #2a2a2a; /* Slightly lighter dark for the app container */
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Adjusted shadow for dark theme */
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1, h2 {
+            color: #ffffff; /* White headings */
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            background-color: #444; /* Darker button background */
+            color: #ffffff;
+            border: 1px solid #555; /* Subtle border */
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #555; /* Lighter hover */
+            border-color: #777;
+        }
+
+        button:disabled {
+            background-color: #3a3a3a;
+            color: #888;
+            border-color: #4a4a4a;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* --- Start Screen --- */
+        #start-screen p {
+            margin-bottom: 1.5rem;
+            color: #b0b0b0; /* Slightly muted text */
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        #start-quiz-btn {
+             background-color: #27ae60; /* Green start button */
+             border-color: #2ecc71;
+        }
+        #start-quiz-btn:hover {
+            background-color: #2ecc71;
+        }
+
+
+        /* --- Quiz Screen --- */
+        #quiz-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #quiz-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            color: #b0b0b0;
+            padding: 0.5rem 1rem;
+            background-color: #333;
+            border-radius: 5px;
+        }
+
+        #problem {
+            font-size: 3rem; /* Larger problem font */
+            font-weight: bold;
+            margin-bottom: 2rem;
+            color: #ffffff; /* White problem text */
+            background-color: #333; /* Dark background for problem */
+            padding: 1.5rem 2rem;
+            border-radius: 5px;
+            min-width: 250px;
+            display: inline-block;
+            border-left: 5px solid #e74c3c; /* Accent color */
+        }
+
+        #answer-input {
+            font-size: 2rem; /* Larger input font */
+            padding: 0.7rem;
+            text-align: center;
+            background-color: #333; /* Dark input */
+            color: #ffffff; /* White text */
+            border: 2px solid #555; /* Darker border */
+            border-radius: 5px;
+            width: 100%;
+            max-width: 250px;
+            margin-bottom: 1rem;
+            /* Ensure numeric input is easy */
+            -moz-appearance: textfield; /* Firefox */
+        }
+        #answer-input:focus {
+             border-color: #3498db; /* Blue focus border */
+             outline: none;
+        }
+        /* Hide spin buttons */
+        #answer-input::-webkit-outer-spin-button,
+        #answer-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+
+        /* --- On-Screen Keyboard (Dark Theme) --- */
+        #keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 1.5rem;
+            max-width: 320px; /* Slightly wider */
+            width: 100%;
+        }
+
+        #keyboard button {
+            font-size: 1.6rem; /* Larger keys */
+            padding: 1.1rem;
+            margin: 0;
+            background-color: #444; /* Dark keys */
+            color: #e0e0e0; /* Light text */
+            border: 1px solid #555;
+        }
+
+        #keyboard button:hover:not(:disabled) {
+            background-color: #555;
+            border-color: #777;
+        }
+
+        #keyboard button.control { /* Backspace, Minus */
+            background-color: #e67e22; /* Orange */
+            border-color: #d35400;
+            color: white;
+        }
+        #keyboard button.control:hover:not(:disabled) {
+            background-color: #d35400;
+        }
+
+        #keyboard button.submit { /* Enter */
+            background-color: #27ae60; /* Green */
+            border-color: #2ecc71;
+            color: white;
+        }
+         #keyboard button.submit:hover:not(:disabled) {
+            background-color: #2ecc71;
+        }
+
+
+        /* --- Summary Screen (Dark Theme Inspired by Image) --- */
+        #summary-screen {
+            /* Layout similar to image if needed, but simple list is fine */
+        }
+
+        #summary-screen h2 {
+            margin-bottom: 2rem;
+            color: #ffffff;
+        }
+
+        #summary-stats p, #level-progress p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: #c0c0c0; /* Light gray text */
+        }
+         #summary-stats span, #level-progress span {
+             color: #ffffff; /* White for specific values */
+             font-weight: bold;
+         }
+         /* Specific styling for key metrics */
+         #summary-accuracy { color: #2ecc71; } /* Green for accuracy */
+
+
+        #level-progress {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: #333;
+            border-radius: 5px;
+        }
+
+        #level-progress p { margin-bottom: 0.8rem; }
+
+        #progress-bar-container {
+            background-color: #444; /* Darker background for progress bar */
+            border-radius: 10px;
+            height: 25px; /* Slightly taller */
+            width: 100%;
+            overflow: hidden;
+            margin-top: 0.8rem;
+            border: 1px solid #555;
+        }
+
+        #progress-bar {
+            background-color: #2ecc71; /* Green progress */
+            height: 100%;
+            width: 0%; /* Initial width */
+            border-radius: 10px 0 0 10px; /* Keep rounded on left */
+            transition: width 0.5s ease-in-out;
+            text-align: center;
+            line-height: 25px; /* Vertically center text */
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3); /* Subtle shadow for text */
+        }
+
+        #mental-tip {
+            margin-top: 2rem;
+            padding: 1.2rem;
+            background-color: #3a3a3a; /* Darker tip box */
+            border-left: 5px solid #3498db; /* Blue accent border */
+            border-radius: 4px;
+            text-align: left;
+            color: #e0e0e0; /* Light text */
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        #start-next-session-btn {
+            padding: 1rem 2rem; /* Larger button */
+            font-size: 1.1rem;
+             background-color: #3498db; /* Blue action button */
+             border-color: #2980b9;
+        }
+        #start-next-session-btn:hover {
+             background-color: #2980b9;
+        }
+
+
+        /* --- Responsive Design --- */
+        /* Hide keyboard by default (for desktop) */
+        #keyboard {
+            display: none;
+        }
+
+        /* Media Query for mobile and tablet */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem; /* Less padding */
+            }
+            #app {
+                padding: 1rem; /* Less padding */
+                margin: 0.5rem;
+            }
+
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.5rem; }
+
+            #problem {
+                font-size: 2.2rem; /* Adjust font size */
+                padding: 1rem 1.5rem;
+                min-width: auto; /* Allow shrinking */
+                width: 90%; /* Take most width */
+            }
+
+            #answer-input {
+                font-size: 1.8rem;
+                 max-width: 200px;
+            }
+
+            #quiz-stats {
+                font-size: 0.9rem;
+                flex-wrap: wrap; /* Allow wrapping on small screens */
+                justify-content: center;
+                gap: 10px;
+            }
+
+            /* Show keyboard only on smaller devices */
+            #keyboard {
+                display: grid;
+            }
+             #answer-input:focus {
+                 /* Optional: Try to prevent default keyboard */
+                /* caret-color: transparent; */
+            }
+        }
+         @media (max-width: 400px) {
+             #quiz-stats {
+                 flex-direction: column;
+                 align-items: center;
+                 gap: 8px;
+             }
+             #keyboard {
+                 max-width: 100%;
+             }
+              #keyboard button {
+                 font-size: 1.3rem; /* Smaller keys on very small screens */
+                 padding: 0.9rem;
+             }
+             #problem {
+                 font-size: 2rem;
+             }
+             #answer-input {
+                 font-size: 1.6rem;
+             }
+         }
+
+         /* Styling for answer feedback */
+         .correct-answer {
+             border-color: #2ecc71 !important; /* Green border for correct */
+             box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+         }
+         .incorrect-answer {
+             border-color: #e74c3c !important; /* Red border for incorrect */
+              box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+         }
+
+
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- Start Screen -->
+        <div id="start-screen">
+            <h1>Mental Math Trainer</h1>
+            <p>Sharpen your calculation skills. Complete 10 problems, level up, and track your progress.</p>
+            <button id="start-quiz-btn">Start Quiz</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div id="quiz-stats">
+                <span id="problem-counter">Problem: 1 / 10</span>
+                <span id="score-counter">Score: 0</span>
+                <span id="timer">Time: 0s</span>
+            </div>
+            <div id="problem">1 + 1</div>
+            <input type="text" id="answer-input" pattern="[0-9-]*" inputmode="numeric" autocomplete="off" autofocus>
+
+            <!-- On-Screen Keyboard -->
+            <div id="keyboard" class="hidden">
+                <button data-key="1">1</button>
+                <button data-key="2">2</button>
+                <button data-key="3">3</button>
+                <button data-key="4">4</button>
+                <button data-key="5">5</button>
+                <button data-key="6">6</button>
+                <button data-key="7">7</button>
+                <button data-key="8">8</button>
+                <button data-key="9">9</button>
+                <button data-key="-" class="control">-</button>
+                <button data-key="0">0</button>
+                <button data-key="Backspace" class="control">⌫</button>
+                 <!-- Span across columns -->
+                 <button data-key="Enter" class="submit" style="grid-column: 1 / -1;">Enter</button>
+            </div>
+        </div>
+
+        <!-- Summary Screen -->
+        <div id="summary-screen" class="hidden">
+            <h2>Session Summary</h2>
+            <div id="summary-stats">
+                <p>Problems Attempted: <span id="summary-attempted">0</span></p>
+                <p>Correct Answers: <span id="summary-correct">0</span></p>
+                <p>Accuracy: <span id="summary-accuracy">0%</span></p>
+                <p>Total Time: <span id="summary-time">0s</span></p>
+            </div>
+            <div id="level-progress">
+                <p>Current Level: <span id="summary-level">1</span></p>
+                <p>XP: <span id="summary-xp">0</span> / <span id="summary-xp-next">100</span></p>
+                <div id="progress-bar-container">
+                    <div id="progress-bar"></div>
+                </div>
+            </div>
+            <p id="mental-tip">Keep practicing to improve!</p>
+            <button id="start-next-session-btn">Start Next Session</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const app = document.getElementById('app');
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const summaryScreen = document.getElementById('summary-screen');
+
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const problemCounterEl = document.getElementById('problem-counter');
+        const scoreCounterEl = document.getElementById('score-counter');
+        const timerEl = document.getElementById('timer');
+        const problemEl = document.getElementById('problem');
+        const answerInput = document.getElementById('answer-input');
+        const keyboard = document.getElementById('keyboard');
+
+        const summaryAttemptedEl = document.getElementById('summary-attempted');
+        const summaryCorrectEl = document.getElementById('summary-correct');
+        const summaryAccuracyEl = document.getElementById('summary-accuracy');
+        const summaryTimeEl = document.getElementById('summary-time');
+        const summaryLevelEl = document.getElementById('summary-level');
+        const summaryXpEl = document.getElementById('summary-xp');
+        const summaryXpNextEl = document.getElementById('summary-xp-next');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+        const progressBar = document.getElementById('progress-bar');
+        const mentalTipEl = document.getElementById('mental-tip');
+        const startNextSessionBtn = document.getElementById('start-next-session-btn');
+
+        // --- Constants ---
+        const PROBLEMS_PER_SESSION = 10;
+        const XP_PER_LEVEL_BASE = 100; // Base XP needed for level 1 -> 2
+        const XP_GROWTH_FACTOR = 1.1; // XP needed increases by 10% each level
+        const XP_PER_CORRECT_ANSWER = 10;
+        const BASE_DIFFICULTY_ADD_SUB = 5; // Starting range for +/-
+        const BASE_DIFFICULTY_MULT_DIV = 2; // Starting range for */÷ factors
+        const LEVEL_DIFFICULTY_INCREMENT = 3; // How much range increases per level
+
+
+        // --- Game State Variables ---
+        let userData = {
+            level: 1,
+            xp: 0,
+            sessionHistory: []
+        };
+
+        let currentSession = {
+            problems: [],
+            startTime: null,
+            endTime: null,
+            correctAnswers: 0,
+            problemsAttempted: 0,
+            currentProblemIndex: 0,
+            score: 0, // This score is the XP gained *in this session*
+            timerInterval: null,
+            elapsedSeconds: 0,
+            currentProblem: null,
+            problemStartTime: null
+        };
+
+        let isMobile = false;
+        let feedbackTimeout = null; // To manage feedback display timing
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            console.log("Initializing Mental Math Trainer (Dark Mode)...");
+            loadUserData();
+            detectDevice();
+            setupEventListeners();
+            showScreen('start');
+            updateLevelDisplay(); // Initial display update for summary screen elements
+        }
+
+        function getXpForNextLevel(level) {
+             // XP needed increases with level
+            return Math.floor(XP_PER_LEVEL_BASE * Math.pow(XP_GROWTH_FACTOR, level - 1));
+        }
+
+        function loadUserData() {
+            const savedData = localStorage.getItem('mentalMathUserData_v2'); // Use a new key if structure changes significantly
+            if (savedData) {
+                try {
+                    userData = JSON.parse(savedData);
+                    // Validation
+                    if (typeof userData.level !== 'number' || userData.level < 1) userData.level = 1;
+                    if (typeof userData.xp !== 'number' || userData.xp < 0) userData.xp = 0;
+                    if (!Array.isArray(userData.sessionHistory)) userData.sessionHistory = [];
+                    console.log("User data loaded:", userData);
+                } catch (error) {
+                    console.error("Error parsing user data from localStorage:", error);
+                    userData = { level: 1, xp: 0, sessionHistory: [] };
+                    saveUserData();
+                }
+            } else {
+                console.log("No previous user data found. Using defaults.");
+                saveUserData();
+            }
+        }
+
+        function saveUserData() {
+            try {
+                localStorage.setItem('mentalMathUserData_v2', JSON.stringify(userData));
+                console.log("User data saved:", userData);
+            } catch (error) {
+                console.error("Error saving user data to localStorage:", error);
+            }
+        }
+
+        function detectDevice() {
+            isMobile = ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 0) || window.innerWidth <= 768;
+            console.log("Is mobile device:", isMobile);
+            // Visibility handled when quiz screen shown
+        }
+
+        function toggleKeyboardVisibility() {
+             if (isMobile) {
+                keyboard.classList.remove('hidden');
+                // answerInput.readOnly = true; // Optionally prevent native keyboard
+            } else {
+                keyboard.classList.add('hidden');
+                // answerInput.readOnly = false;
+            }
+        }
+
+        function setupEventListeners() {
+            startQuizBtn.addEventListener('click', startQuiz);
+            startNextSessionBtn.addEventListener('click', startQuiz);
+            answerInput.addEventListener('keypress', handleAnswerInputKeypress);
+            keyboard.addEventListener('click', handleKeyboardClick);
+        }
+
+        // --- Screen Management ---
+        function showScreen(screenName) {
+            startScreen.classList.add('hidden');
+            quizScreen.classList.add('hidden');
+            summaryScreen.classList.add('hidden');
+
+            if (screenName === 'start') {
+                startScreen.classList.remove('hidden');
+            } else if (screenName === 'quiz') {
+                quizScreen.classList.remove('hidden');
+                detectDevice(); // Re-check device type
+                toggleKeyboardVisibility();
+                answerInput.focus();
+                // Clear any lingering feedback styles
+                answerInput.classList.remove('correct-answer', 'incorrect-answer');
+            } else if (screenName === 'summary') {
+                summaryScreen.classList.remove('hidden');
+            }
+        }
+
+        // --- Quiz Logic ---
+        function startQuiz() {
+            console.log("Starting new quiz session...");
+            resetSessionState();
+            currentSession.startTime = Date.now();
+            startTimer();
+            nextProblem(); // Load the first problem
+            showScreen('quiz');
+            // updateQuizDisplay() is called within nextProblem()
+        }
+
+        function resetSessionState() {
+             // Clear previous feedback timeout if any
+             if(feedbackTimeout) clearTimeout(feedbackTimeout);
+
+            currentSession = {
+                problems: [],
+                startTime: null,
+                endTime: null,
+                correctAnswers: 0,
+                problemsAttempted: 0,
+                currentProblemIndex: 0,
+                score: 0, // Reset session score (XP gained this session)
+                timerInterval: null,
+                elapsedSeconds: 0,
+                currentProblem: null,
+                problemStartTime: null
+            };
+            timerEl.textContent = "Time: 0s"; // Reset timer display
+             scoreCounterEl.textContent = "Score: 0"; // Reset score display
+             problemCounterEl.textContent = `Problem: 0 / ${PROBLEMS_PER_SESSION}`; // Reset problem counter display
+        }
+
+        function startTimer() {
+            if (currentSession.timerInterval) clearInterval(currentSession.timerInterval);
+            currentSession.elapsedSeconds = 0;
+            timerEl.textContent = `Time: 0s`; // Update display immediately
+            currentSession.timerInterval = setInterval(() => {
+                currentSession.elapsedSeconds++;
+                timerEl.textContent = `Time: ${currentSession.elapsedSeconds}s`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(currentSession.timerInterval);
+            currentSession.timerInterval = null;
+        }
+
+        function nextProblem() {
+            // Clear previous feedback style and timeout
+            answerInput.classList.remove('correct-answer', 'incorrect-answer');
+             if(feedbackTimeout) clearTimeout(feedbackTimeout);
+
+            if (currentSession.currentProblemIndex >= PROBLEMS_PER_SESSION) {
+                endQuiz();
+                return;
+            }
+
+            currentSession.currentProblemIndex++;
+            currentSession.currentProblem = generateProblem(userData.level);
+            currentSession.problemStartTime = Date.now();
+
+            updateQuizDisplay(); // Update counters
+            problemEl.textContent = currentSession.currentProblem.question;
+            answerInput.value = '';
+            answerInput.disabled = false; // Ensure input is enabled
+            answerInput.focus();
+        }
+
+        // --- UPDATED Difficulty Scaling ---
+        function generateProblem(level) {
+            const maxAddSub = BASE_DIFFICULTY_ADD_SUB + (level * LEVEL_DIFFICULTY_INCREMENT);
+            const maxMultFactor = BASE_DIFFICULTY_MULT_DIV + Math.floor(level / 1.5); // Slower growth for mult/div factors
+            const maxDivResult = BASE_DIFFICULTY_MULT_DIV + Math.floor(level / 2); // Max result for division
+
+            let num1, num2, operator, question, answer;
+
+            // Determine available operations based on level
+            const availableOps = ['+'];
+            if (level >= 2) availableOps.push('-');
+            if (level >= 4) availableOps.push('×'); // Multiplication earlier
+            if (level >= 6) availableOps.push('÷'); // Division later
+
+             // Introduce negative results in subtraction more gradually
+            const allowNegativeSubtraction = level >= 5;
+
+            // Choose a random available operator
+            operator = availableOps[Math.floor(Math.random() * availableOps.length)];
+
+            switch (operator) {
+                case '-':
+                    num1 = Math.floor(Math.random() * maxAddSub);
+                    if (allowNegativeSubtraction && Math.random() > 0.4) { // 60% chance of negative result if allowed
+                        num2 = num1 + Math.floor(Math.random() * (maxAddSub / 2)) + 1; // Ensure num2 is larger
+                    } else {
+                        num2 = Math.floor(Math.random() * (num1 + 1)); // Ensure result >= 0 if negatives not allowed or by chance
+                    }
+                    answer = num1 - num2;
+                    break;
+                case '×':
+                    num1 = Math.floor(Math.random() * maxMultFactor) + 1; // Avoid multiplying by 0 often
+                    num2 = Math.floor(Math.random() * maxMultFactor) + (num1 === 1 ? 1 : 0); // Avoid 1x0 if num1 is 1
+                    answer = num1 * num2;
+                    break;
+                 case '÷':
+                    // Ensure non-zero divisor and integer result
+                    num2 = Math.floor(Math.random() * maxMultFactor) + 1; // Divisor > 0
+                    answer = Math.floor(Math.random() * maxDivResult) + 1; // Result > 0
+                    num1 = answer * num2;
+                    break;
+                case '+':
+                default:
+                    num1 = Math.floor(Math.random() * maxAddSub);
+                    num2 = Math.floor(Math.random() * maxAddSub);
+                    answer = num1 + num2;
+                    break;
+            }
+
+            question = `${num1} ${operator} ${num2}`;
+            console.log(`Generated Problem (Level ${level}): ${question} = ${answer}, Operator: ${operator}`);
+            return { question, answer };
+        }
+
+
+        function updateQuizDisplay() {
+            problemCounterEl.textContent = `Problem: ${currentSession.currentProblemIndex} / ${PROBLEMS_PER_SESSION}`;
+            // SCORE UPDATE: Display the score accumulated *in this session*
+            scoreCounterEl.textContent = `Score: ${currentSession.score}`;
+        }
+
+        function handleAnswerInputKeypress(event) {
+            const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', 'Enter', 'Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End'];
+            if (event.key === 'Enter') {
+                 event.preventDefault();
+                 checkAnswer();
+             } else if (!allowedKeys.includes(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                 // Prevent most non-numeric/control keys on physical keyboard
+                 // Allows navigation/deletion keys
+                // event.preventDefault(); // Can be too strict, rely on validation
+            }
+        }
+
+         function handleKeyboardClick(event) {
+            if (event.target.tagName !== 'BUTTON') return;
+
+            const key = event.target.dataset.key;
+            const currentValue = answerInput.value;
+
+            // Clear feedback styling on new input
+             answerInput.classList.remove('correct-answer', 'incorrect-answer');
+             if(feedbackTimeout) clearTimeout(feedbackTimeout);
+
+
+            if (key === 'Enter') {
+                checkAnswer();
+            } else if (key === 'Backspace') {
+                answerInput.value = currentValue.slice(0, -1);
+            } else if (key === '-' && currentValue.length === 0) {
+                answerInput.value += key;
+            } else if (!isNaN(parseInt(key))) {
+                answerInput.value += key;
+            }
+            answerInput.focus();
+        }
+
+
+        function checkAnswer() {
+            // Prevent checking if already processing feedback
+             if (answerInput.disabled) return;
+
+            const userAnswerRaw = answerInput.value.trim();
+            if (userAnswerRaw === '' || isNaN(parseInt(userAnswerRaw)) || !/^-?\d+$/.test(userAnswerRaw)) {
+                // More robust check for valid integer format
+                answerInput.classList.add('incorrect-answer'); // Use visual feedback for invalid input
+                 console.log("Invalid input provided:", userAnswerRaw);
+                 feedbackTimeout = setTimeout(() => {
+                     answerInput.classList.remove('incorrect-answer');
+                 }, 800); // Remove feedback after a delay
+                return;
+            }
+
+             // Disable input during feedback
+            answerInput.disabled = true;
+
+            const userAnswer = parseInt(userAnswerRaw);
+            const correctAnswer = currentSession.currentProblem.answer;
+            const timeTaken = (Date.now() - currentSession.problemStartTime) / 1000;
+
+            const isCorrect = userAnswer === correctAnswer;
+
+            console.log(`Problem: ${currentSession.currentProblem.question}, User: ${userAnswer}, Correct: ${correctAnswer}, Correct: ${isCorrect}, Time: ${timeTaken.toFixed(2)}s`);
+
+            // Visual Feedback using CSS classes
+            answerInput.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
+
+            if (isCorrect) {
+                currentSession.correctAnswers++;
+                // SCORE FIX: Increment session score correctly
+                currentSession.score += XP_PER_CORRECT_ANSWER;
+                updateQuizDisplay(); // Update score display immediately on correct answer
+            }
+
+            currentSession.problemsAttempted++;
+
+            currentSession.problems.push({
+                question: currentSession.currentProblem.question,
+                correctAnswer: correctAnswer,
+                userAnswer: userAnswer,
+                timeTaken: timeTaken,
+                isCorrect: isCorrect
+            });
+
+            // Move to the next problem after a delay
+            // Clear the feedback styling before moving on
+            feedbackTimeout = setTimeout(() => {
+                 answerInput.classList.remove('correct-answer', 'incorrect-answer');
+                 answerInput.disabled = false; // Re-enable input
+                 nextProblem();
+             }, 600); // Delay allows user to see feedback (e.g., 600ms)
+        }
+
+        function endQuiz() {
+            console.log("Ending quiz session...");
+             if(feedbackTimeout) clearTimeout(feedbackTimeout); // Clear any pending feedback timeout
+            stopTimer();
+            currentSession.endTime = Date.now();
+            const totalTime = (currentSession.endTime - currentSession.startTime) / 1000;
+
+            updateUserDataAfterSession(); // Update level/XP based on session score
+            saveUserData();
+            displaySummary(totalTime);
+            showScreen('summary');
+        }
+
+        // --- User Data & Leveling ---
+        function updateUserDataAfterSession() {
+            // Update total XP with the score (XP gained) from the current session
+            const xpGained = currentSession.score; // Score directly maps to XP gained
+            userData.xp += xpGained;
+
+            let xpForNext = getXpForNextLevel(userData.level);
+
+            // Check for level up (can happen multiple times)
+            while (userData.xp >= xpForNext) {
+                userData.level++;
+                userData.xp -= xpForNext; // Subtract threshold for the level just passed
+                xpForNext = getXpForNextLevel(userData.level); // Get threshold for the *new* level
+                console.log(`Level Up! Reached Level ${userData.level}. XP needed for next: ${xpForNext}`);
+            }
+
+            // Add session summary to history
+            const sessionSummary = {
+                date: new Date().toISOString(),
+                levelReached: userData.level, // Level at end of session
+                correct: currentSession.correctAnswers,
+                attempted: currentSession.problemsAttempted,
+                time: (currentSession.endTime - currentSession.startTime) / 1000,
+                accuracy: currentSession.problemsAttempted > 0 ? (currentSession.correctAnswers / currentSession.problemsAttempted) * 100 : 0,
+                xpGained: xpGained
+            };
+            userData.sessionHistory.push(sessionSummary);
+            if (userData.sessionHistory.length > 50) { // Limit history
+                userData.sessionHistory.shift();
+            }
+             console.log("Session finished. User XP:", userData.xp, "Level:", userData.level);
+        }
+
+        function updateLevelDisplay() {
+             const xpForNext = getXpForNextLevel(userData.level);
+            summaryLevelEl.textContent = userData.level;
+            summaryXpEl.textContent = userData.xp;
+            summaryXpNextEl.textContent = xpForNext; // Display XP needed for the *current* level
+
+            const progressPercent = xpForNext > 0 ? (userData.xp / xpForNext) * 100 : 100; // Handle potential division by zero if xpForNext is 0 (unlikely)
+            // Cap progress bar at 100% visually, even if XP exceeds threshold before level up logic runs
+            const displayPercent = Math.min(progressPercent, 100);
+
+            progressBar.style.width = `${displayPercent}%`;
+            progressBar.textContent = `${Math.floor(displayPercent)}%`;
+        }
+
+
+        // --- Summary Screen ---
+        function displaySummary(totalTime) {
+            const accuracy = currentSession.problemsAttempted > 0
+                ? (currentSession.correctAnswers / currentSession.problemsAttempted) * 100
+                : 0;
+
+            summaryAttemptedEl.textContent = currentSession.problemsAttempted;
+            summaryCorrectEl.textContent = currentSession.correctAnswers;
+            summaryAccuracyEl.textContent = `${accuracy.toFixed(1)}%`;
+            summaryTimeEl.textContent = `${totalTime.toFixed(1)}s`;
+
+            updateLevelDisplay(); // Update level and XP progress bar based on latest userData
+
+            mentalTipEl.textContent = selectMentalMathTip(accuracy, userData.level);
+        }
+
+        function selectMentalMathTip(accuracy, level) {
+            // Enhanced tips based on performance and level
+            if (accuracy < 60) {
+                return "Tip: Accuracy is key! Slow down slightly, double-check your calculations, especially for subtraction and carrying over in addition.";
+            } else if (accuracy < 85) {
+                 if (level <= 3) {
+                     return "Tip: Solid effort! Practice breaking numbers into easier parts (e.g., 47 + 8 = 47 + 3 + 5 = 50 + 5 = 55).";
+                 } else if (level <= 6) {
+                      return "Tip: Good work! Focus on multiplication tables. Knowing them instantly frees up mental energy for harder problems.";
+                 } else {
+                     return "Tip: Getting there! Try visualizing the steps for division or multi-step problems if they appear.";
+                 }
+            } else if (accuracy < 95) {
+                 if (level <= 5) {
+                     return "Tip: Very good! Look for shortcuts like adding/subtracting 9 or 11 (adjust by 10, then +/- 1).";
+                 } else {
+                    return "Tip: Excellent accuracy! Challenge yourself by trying to answer a little faster without sacrificing correctness.";
+                 }
+            } else { // Accuracy >= 95%
+                 if (level <= 7) {
+                     return "Tip: Fantastic accuracy! Keep practicing consistently to make these calculations second nature.";
+                 } else {
+                     return "Tip: Master level! You're doing great. Can you estimate answers quickly before calculating precisely?";
+                 }
+
+            }
+        }
+
+    </script>
+</body>
+</html>

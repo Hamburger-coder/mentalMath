@@ -1009,6 +1009,8 @@
             
             // Function to call Netlify function with different paths
             const callNetlifyFunction = async (functionPath) => {
+                console.log(`Attempting to call Netlify function at: ${functionPath}`);
+                
                 try {
                     const response = await fetch(functionPath, {
                         method: 'POST',
@@ -1020,21 +1022,59 @@
                         })
                     });
                     
+                    // Log response status for debugging
+                    console.log(`Response from ${functionPath}: status ${response.status}`);
+                    
                     if (!response.ok) {
-                        throw new Error(`Request failed with status ${response.status}`);
+                        // Try to get response text for more detailed error info
+                        let errorDetails = '';
+                        try {
+                            const errorText = await response.text();
+                            errorDetails = errorText ? `: ${errorText}` : '';
+                            // Try to parse as JSON for more structured error info
+                            try {
+                                const errorJson = JSON.parse(errorText);
+                                if (errorJson.error || errorJson.message) {
+                                    errorDetails = `: ${errorJson.error || ''} ${errorJson.message || ''}`;
+                                }
+                            } catch (e) {
+                                // Not valid JSON, that's fine, we'll use the text
+                            }
+                        } catch (e) {
+                            // Couldn't read response text, that's fine
+                        }
+                        
+                        throw new Error(`Request failed with status ${response.status}${errorDetails}`);
                     }
                     
-                    return await response.json();
+                    const data = await response.json();
+                    console.log(`Successfully received data from ${functionPath}:`, data);
+                    return data;
                 } catch (error) {
                     console.error(`Error calling ${functionPath}:`, error);
                     throw error;
                 }
             };
             
+            // Also try calling the debug function first to see if functions are working at all
+            callNetlifyFunction('/.netlify/functions/debugFunction')
+                .then(debug => {
+                    console.log("Debug function response:", debug);
+                })
+                .catch(debugError => {
+                    console.error("Debug function failed:", debugError);
+                });
+            
             // Try the main function first, then fall back to alternatives
             callNetlifyFunction('/.netlify/functions/generateTip')
-                .catch(() => callNetlifyFunction('/.netlify/functions/generateTip-js/generateTip'))
-                .catch(() => callNetlifyFunction('/.netlify/functions/generateTipNode/generateTipNode'))
+                .catch(error => {
+                    console.log("First function attempt failed, trying alternative...", error);
+                    return callNetlifyFunction('/.netlify/functions/generateTip-js/generateTip');
+                })
+                .catch(error => {
+                    console.log("Second function attempt failed, trying final alternative...", error);
+                    return callNetlifyFunction('/.netlify/functions/generateTipNode/generateTipNode');
+                })
                 .then(data => {
                     // Extract the generated tip from the response
                     let tip = "Tip: ";
@@ -1044,6 +1084,7 @@
                     } else if (typeof data === 'object' && data.generated_text) {
                         tip += data.generated_text;
                     } else {
+                        console.log("Unexpected data format:", data);
                         // Fallback tip if the response format is unexpected
                         tip += `For problems like ${problem.question}, break down the calculation into smaller steps.`;
                     }
@@ -1058,6 +1099,16 @@
                     // Fallback tip if all API calls fail
                     const fallbackTip = `Tip: For problems like ${problem.question}, try breaking the calculation into smaller steps and practice mental shortcuts.`;
                     mentalTipEl.textContent = fallbackTip;
+                    
+                    // Add the error to the tip for testing/debugging on production (can be removed later)
+                    if (mentalTipEl) {
+                        const errorNote = document.createElement('div');
+                        errorNote.style.marginTop = '10px';
+                        errorNote.style.fontSize = '0.8rem';
+                        errorNote.style.color = '#e74c3c';
+                        errorNote.textContent = `Debug info: ${error.message}`;
+                        mentalTipEl.appendChild(errorNote);
+                    }
                 });
         }
 

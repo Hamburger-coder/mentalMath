@@ -2,7 +2,7 @@
 
 A web application designed to help users sharpen their mental calculation skills through timed quizzes and progress tracking.
 
-Accessible at: [https://hamburger-coder.github.io/mentalMath](https://hamburger-coder.github.io/mentalMath)
+Accessible at: [https://silver-torrone-6eb2d2.netlify.app/](https://silver-torrone-6eb2d2.netlify.app/)
 
 ## Features
 
@@ -19,7 +19,7 @@ Accessible at: [https://hamburger-coder.github.io/mentalMath](https://hamburger-
 ## Access
 
 You can access and use the Mental Math Trainer directly in your web browser:
-[https://hamburger-coder.github.io/mentalMath](https://hamburger-coder.github.io/mentalMath)
+[https://silver-torrone-6eb2d2.netlify.app/](https://silver-torrone-6eb2d2.netlify.app/)
 
 ## Deployment with Netlify
 

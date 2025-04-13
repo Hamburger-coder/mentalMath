@@ -1001,115 +1001,90 @@
          * to generate a personalized tip based on the most difficult problem from the session
          * @param {Object} problem - The problem object with the highest struggle score
          */
-        function generatePersonalizedTip(problem) {
-            console.log("Generating personalized tip for problem:", problem.question);
+        async function generatePersonalizedTip(mathProblem) {
+            const mentalTipEl = document.getElementById('mental-tip');
+            mentalTipEl.textContent = 'Generating a personalized tip...';
             
-            // Update the mental tip with a loading message
-            mentalTipEl.textContent = "Generating personalized tip...";
+            console.log("Attempting to generate personalized tip for:", mathProblem);
             
-            // Function to call Netlify function with different paths
-            const callNetlifyFunction = async (functionPath) => {
-                console.log(`Attempting to call Netlify function at: ${functionPath}`);
-                
+            async function callNetlifyFunction(functionPath, problem) {
+                console.log(`Attempting to call function at: ${functionPath}`);
                 try {
                     const response = await fetch(functionPath, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            problem: problem.question
-                        })
+                        body: JSON.stringify({ problem: problem }),
                     });
                     
-                    // Log response status for debugging
-                    console.log(`Response from ${functionPath}: status ${response.status}`);
+                    console.log(`Response status from ${functionPath}:`, response.status);
                     
                     if (!response.ok) {
-                        // Try to get response text for more detailed error info
-                        let errorDetails = '';
-                        try {
-                            const errorText = await response.text();
-                            errorDetails = errorText ? `: ${errorText}` : '';
-                            // Try to parse as JSON for more structured error info
-                            try {
-                                const errorJson = JSON.parse(errorText);
-                                if (errorJson.error || errorJson.message) {
-                                    errorDetails = `: ${errorJson.error || ''} ${errorJson.message || ''}`;
-                                }
-                            } catch (e) {
-                                // Not valid JSON, that's fine, we'll use the text
-                            }
-                        } catch (e) {
-                            // Couldn't read response text, that's fine
-                        }
-                        
-                        throw new Error(`Request failed with status ${response.status}${errorDetails}`);
+                        const errorText = await response.text();
+                        console.error(`API request failed with status ${response.status}:`, errorText);
+                        throw new Error(`Request failed with status ${response.status}`);
                     }
                     
                     const data = await response.json();
-                    console.log(`Successfully received data from ${functionPath}:`, data);
+                    console.log(`Successful response from ${functionPath}:`, data);
                     return data;
                 } catch (error) {
                     console.error(`Error calling ${functionPath}:`, error);
                     throw error;
                 }
-            };
+            }
             
-            // Also try calling the debug function first to see if functions are working at all
-            callNetlifyFunction('/.netlify/functions/debugFunction')
-                .then(debug => {
-                    console.log("Debug function response:", debug);
-                })
-                .catch(debugError => {
-                    console.error("Debug function failed:", debugError);
-                });
-            
-            // Try the main function first, then fall back to alternatives
-            callNetlifyFunction('/.netlify/functions/generateTip')
-                .catch(error => {
-                    console.log("First function attempt failed, trying alternative...", error);
-                    return callNetlifyFunction('/.netlify/functions/generateTip-js/generateTip');
-                })
-                .catch(error => {
-                    console.log("Second function attempt failed, trying final alternative...", error);
-                    return callNetlifyFunction('/.netlify/functions/generateTipNode/generateTipNode');
-                })
-                .then(data => {
-                    // Extract the generated tip from the response
-                    let tip = "Tip: ";
+            try {
+                // Try the simple function first (no external API dependencies)
+                try {
+                    console.log("Trying the simple function first");
+                    const data = await callNetlifyFunction('/.netlify/functions/simpleFunction', mathProblem);
                     
-                    if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-                        tip += data[0].generated_text;
-                    } else if (typeof data === 'object' && data.generated_text) {
-                        tip += data.generated_text;
-                    } else {
-                        console.log("Unexpected data format:", data);
-                        // Fallback tip if the response format is unexpected
-                        tip += `For problems like ${problem.question}, break down the calculation into smaller steps.`;
+                    if (data && data.generated_text) {
+                        console.log("Successfully generated tip with simple function");
+                        mentalTipEl.textContent = data.generated_text;
+                        return;
                     }
-                    
-                    // Update the displayed tip
-                    mentalTipEl.textContent = tip;
-                    console.log("Generated tip:", tip);
-                })
-                .catch(error => {
-                    console.error("All attempts to generate tip failed:", error);
-                    
-                    // Fallback tip if all API calls fail
-                    const fallbackTip = `Tip: For problems like ${problem.question}, try breaking the calculation into smaller steps and practice mental shortcuts.`;
-                    mentalTipEl.textContent = fallbackTip;
-                    
-                    // Add the error to the tip for testing/debugging on production (can be removed later)
-                    if (mentalTipEl) {
-                        const errorNote = document.createElement('div');
-                        errorNote.style.marginTop = '10px';
-                        errorNote.style.fontSize = '0.8rem';
-                        errorNote.style.color = '#e74c3c';
-                        errorNote.textContent = `Debug info: ${error.message}`;
-                        mentalTipEl.appendChild(errorNote);
+                } catch (simpleError) {
+                    console.log("Simple function failed, trying other functions...", simpleError);
+                }
+                
+                // Try each function path in sequence
+                const functionPaths = [
+                    '/.netlify/functions/generateTip',
+                    '/.netlify/functions/generateTip-js/generateTip',
+                    '/.netlify/functions/generateTipNode/generateTipNode'
+                ];
+                
+                let lastError = null;
+                
+                for (const path of functionPaths) {
+                    try {
+                        const data = await callNetlifyFunction(path, mathProblem);
+                        
+                        if (data && data.generated_text) {
+                            console.log(`Successfully generated tip with ${path}`);
+                            mentalTipEl.textContent = data.generated_text;
+                            return;
+                        } else {
+                            console.warn(`Unexpected response format from ${path}:`, data);
+                        }
+                    } catch (error) {
+                        console.log(`Function ${path} failed:`, error);
+                        lastError = error;
+                        // Continue to the next function path
                     }
-                });
+                }
+                
+                // If we get here, all attempts failed
+                console.error("All attempts to generate tip failed:", lastError);
+                mentalTipEl.textContent = "Could not generate a tip. Try a different math problem.";
+                
+            } catch (error) {
+                console.error("Error generating personalized tip:", error);
+                mentalTipEl.textContent = "Could not generate a tip. Try a different math problem.";
+            }
         }
 
         // --- User Data & Leveling ---

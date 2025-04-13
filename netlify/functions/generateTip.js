@@ -50,7 +50,7 @@ exports.handler = async function(event, context) {
     const prompt = `Provide a math tip to help solve this problem faster: ${mathProblem}`;
 
     // Set up API URL and check if fetch is available
-    const apiUrl = 'https://api-inference.huggingface.co/models/mrm8488/t5-base-finetuned-math-summarization';
+    const apiUrl = 'https://api-inference.huggingface.co/models/google/flan-t5-base';
     console.log("About to call Hugging Face API at:", apiUrl);
     
     if (typeof fetch !== 'function') {

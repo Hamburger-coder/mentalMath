@@ -1001,10 +1001,12 @@
          * to generate a personalized tip based on the most difficult problem from the session
          * @param {Object} problem - The problem object with the highest struggle score
          */
-        async function generatePersonalizedTip(mathProblem) {
+        async function generatePersonalizedTip(problem) {
             const mentalTipEl = document.getElementById('mental-tip');
             mentalTipEl.textContent = 'Generating a personalized tip...';
             
+            // Extract the question from the problem object
+            const mathProblem = problem.question;
             console.log("Attempting to generate personalized tip for:", mathProblem);
             
             async function callNetlifyFunction(functionPath, problem) {
